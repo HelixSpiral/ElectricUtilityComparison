@@ -1,11 +1,12 @@
 package main
 
 import (
+	"flag"     // Needed for CLI parsing
 	"fmt"      // Needed for printing
 	"net/http" // Needed for http call
 	"regexp"   // Needed for space trimming
-	"strings"  // Needed for space trimming
 	"strconv"  // Needed to convert string to float
+	"strings"  // Needed for space trimming
 
 	"github.com/PuerkitoBio/goquery" // Needed for HTML table parsing
 )
@@ -13,11 +14,16 @@ import (
 const MAINE_SUPPLIER_URL = "https://www.maine.gov/meopa/electricity/electricity-supply"
 
 func main() {
-	fmt.Println("Maine electricity cost comparison tool.")
+	var currentCost float64
+	var electricProvider string
 
-	electricProvider := "CMP"
-	currentCost := 8.0
+	flag.Float64Var(&currentCost, "current", 10.0, "Current cost of your electricity in ¢/kWh")
+	flag.StringVar(&electricProvider, "provider", "CMP", "Current electric provider, defaults to CMP")
+	flag.Parse()
+
 	lowestCost := currentCost
+
+	fmt.Println("Maine electricity cost comparison tool.")
 
 	// Grab all the rows
 	rows := getHeadingRows(MAINE_SUPPLIER_URL)
@@ -83,14 +89,15 @@ func main() {
 		}
 	}
 
-	fmt.Println(currentCost, lowestCost)
+	fmt.Println("Current Cost:", currentCost)
+	fmt.Println("Lowest Cost Found:", lowestCost)
 	fmt.Println("If there's a provider offering cheaper electricity you can switch and save money.")
 	fmt.Println("There's no change in equipment, lines, or anything. Just a billing change with your provider.")
 	fmt.Println("For more details please visit: https://www.maine.gov/meopa/electricity/electricity-supply#CEPrates")
 }
 
 // Get the headings and rows from the website
-func getHeadingRows(supplierURL string) ([][]string) {
+func getHeadingRows(supplierURL string) [][]string {
 	var row []string
 	var rows [][]string
 
