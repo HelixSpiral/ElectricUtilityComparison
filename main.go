@@ -17,6 +17,7 @@ const MAINE_SUPPLIER_URL = "https://www.maine.gov/meopa/electricity/electricity-
 func main() {
 	var currentCost float64
 	var electricProvider string
+	var providerRow int
 
 	// Check to see if the user supplied args, or wants to take input.
 	if len(os.Args) > 1 {
@@ -38,6 +39,14 @@ func main() {
 
 	fmt.Println("Maine electricity cost comparison tool.")
 
+	// Figure out what row the provider is in.
+	switch electricProvider {
+	case "CMP":
+		providerRow = 0
+	case "EMERA":
+		providerRow = 1
+	}
+
 	// Grab all the rows
 	rows := getHeadingRows(MAINE_SUPPLIER_URL)
 
@@ -50,54 +59,28 @@ func main() {
 			fmt.Println("- Fixed Term:", row[3])
 			fmt.Println("- Early Termination Fee:", row[4])
 			fmt.Println("- Contact number:", row[5])
-			switch electricProvider {
-			case "CMP":
-				if strings.IndexAny(row[1], " (%)") > -1 {
-					rowSplit := strings.Split(row[1], " ")
-					row[1] = rowSplit[0]
-				}
-				rateCheck, err := strconv.ParseFloat(row[1], 64)
-				handleErr(err)
-				if lowestCost > rateCheck {
-					lowestCost = rateCheck
-				}
-			case "EMERA":
-				if strings.IndexAny(row[2], " (%)") > -1 {
-					rowSplit := strings.Split(row[2], " ")
-					row[2] = rowSplit[0]
-				}
-				rateCheck, err := strconv.ParseFloat(row[2], 64)
-				handleErr(err)
-				if lowestCost > rateCheck {
-					lowestCost = rateCheck
-				}
+			if strings.IndexAny(row[providerRow+1], " (%)") > -1 {
+				rowSplit := strings.Split(row[providerRow+1], " ")
+				row[providerRow+1] = rowSplit[0]
+			}
+			rateCheck, err := strconv.ParseFloat(row[providerRow+1], 64)
+			handleErr(err)
+			if lowestCost > rateCheck {
+				lowestCost = rateCheck
 			}
 		} else if len(row) == 3 {
 			fmt.Println("- CMP Rate:", row[0])
 			fmt.Println("- Emera & BHE:", row[1])
 			fmt.Println("- Fixed Term:", row[2])
 			fmt.Println("See above for early termination fee.")
-			switch electricProvider {
-			case "CMP":
-				if strings.IndexAny(row[0], " (%)") > -1 {
-					rowSplit := strings.Split(row[0], " ")
-					row[0] = rowSplit[0]
-				}
-				rateCheck, err := strconv.ParseFloat(row[0], 64)
-				handleErr(err)
-				if lowestCost > rateCheck {
-					lowestCost = rateCheck
-				}
-			case "EMERA":
-				if strings.IndexAny(row[1], " (%)") > -1 {
-					rowSplit := strings.Split(row[1], " ")
-					row[1] = rowSplit[0]
-				}
-				rateCheck, err := strconv.ParseFloat(row[1], 64)
-				handleErr(err)
-				if lowestCost > rateCheck {
-					lowestCost = rateCheck
-				}
+			if strings.IndexAny(row[providerRow], " (%)") > -1 {
+				rowSplit := strings.Split(row[providerRow], " ")
+				row[providerRow] = rowSplit[0]
+			}
+			rateCheck, err := strconv.ParseFloat(row[providerRow], 64)
+			handleErr(err)
+			if lowestCost > rateCheck {
+				lowestCost = rateCheck
 			}
 		}
 	}
@@ -107,13 +90,15 @@ func main() {
 	fmt.Println("If there's a provider offering cheaper electricity you can switch and save money.")
 	fmt.Println("There's no change in equipment, lines, or anything. Just a billing change with your provider.")
 	fmt.Println("For more details please visit: https://www.maine.gov/meopa/electricity/electricity-supply#CEPrates")
-	if len(flag.Args()) < 2 {
+	if len(os.Args) < 2 {
 		fmt.Println("Press enter to exit.")
 		fmt.Scanf("%v\n", &electricProvider)
 	}
 }
 
 // Get the headings and rows from the website
+// Thanks to Salmoni for some of this logic.
+// https://gist.github.com/salmoni/27aee5bb0d26536391aabe7f13a72494
 func getHeadingRows(supplierURL string) [][]string {
 	var row []string
 	var rows [][]string
