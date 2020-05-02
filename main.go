@@ -4,6 +4,7 @@ import (
 	"flag"     // Needed for CLI parsing
 	"fmt"      // Needed for printing
 	"net/http" // Needed for http call
+	"os"       // Needed to do len(os.Args)
 	"regexp"   // Needed for space trimming
 	"strconv"  // Needed to convert string to float
 	"strings"  // Needed for space trimming
@@ -17,9 +18,21 @@ func main() {
 	var currentCost float64
 	var electricProvider string
 
-	flag.Float64Var(&currentCost, "current", 10.0, "Current cost of your electricity in ¢/kWh")
-	flag.StringVar(&electricProvider, "provider", "CMP", "Current electric provider, defaults to CMP")
-	flag.Parse()
+	// Check to see if the user supplied args, or wants to take input.
+	if len(os.Args) > 1 {
+		flag.Float64Var(&currentCost, "current", 10.0, "Current cost of your electricity in ¢/kWh")
+		flag.StringVar(&electricProvider, "provider", "CMP", "Current electric provider, defaults to CMP")
+		flag.Parse()
+	} else {
+		fmt.Printf("Enter your current price for electricity (¢/kWh): ")
+		_, err := fmt.Scanf("%f\n", &currentCost)
+		handleErr(err)
+
+		fmt.Printf("Enter your current provider. (CMP or EMERA): ")
+		_, err = fmt.Scanf("%s\n", &electricProvider)
+		electricProvider = strings.ToUpper(electricProvider)
+		handleErr(err)
+	}
 
 	lowestCost := currentCost
 
@@ -33,7 +46,7 @@ func main() {
 		if len(row) == 6 {
 			fmt.Println("Provider:", row[0])
 			fmt.Println("- CMP Rate:", row[1])
-			fmt.Println("- Emra & BHE:", row[2])
+			fmt.Println("- Emera & BHE:", row[2])
 			fmt.Println("- Fixed Term:", row[3])
 			fmt.Println("- Early Termination Fee:", row[4])
 			fmt.Println("- Contact number:", row[5])
@@ -48,7 +61,7 @@ func main() {
 				if lowestCost > rateCheck {
 					lowestCost = rateCheck
 				}
-			case "Emra", "BHE":
+			case "EMERA":
 				if strings.IndexAny(row[2], " (%)") > -1 {
 					rowSplit := strings.Split(row[2], " ")
 					row[2] = rowSplit[0]
@@ -61,7 +74,7 @@ func main() {
 			}
 		} else if len(row) == 3 {
 			fmt.Println("- CMP Rate:", row[0])
-			fmt.Println("- Emra & BHE:", row[1])
+			fmt.Println("- Emera & BHE:", row[1])
 			fmt.Println("- Fixed Term:", row[2])
 			fmt.Println("See above for early termination fee.")
 			switch electricProvider {
@@ -75,7 +88,7 @@ func main() {
 				if lowestCost > rateCheck {
 					lowestCost = rateCheck
 				}
-			case "Emra", "BHE":
+			case "EMERA":
 				if strings.IndexAny(row[1], " (%)") > -1 {
 					rowSplit := strings.Split(row[1], " ")
 					row[1] = rowSplit[0]
@@ -94,6 +107,10 @@ func main() {
 	fmt.Println("If there's a provider offering cheaper electricity you can switch and save money.")
 	fmt.Println("There's no change in equipment, lines, or anything. Just a billing change with your provider.")
 	fmt.Println("For more details please visit: https://www.maine.gov/meopa/electricity/electricity-supply#CEPrates")
+	if len(flag.Args()) < 2 {
+		fmt.Println("Press enter to exit.")
+		fmt.Scanf("%v\n", &electricProvider)
+	}
 }
 
 // Get the headings and rows from the website
