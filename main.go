@@ -30,6 +30,9 @@ type ElectricSupplier struct {
 }
 
 func main() {
+	fmt.Println("Maine electricity cost comparison tool.")
+
+	// Vars
 	var currentCost float64
 	var electricProvider string
 	var lowestProvider string
@@ -50,23 +53,22 @@ func main() {
 		handleErr(err)
 	}
 
+	// More vars
 	electricProvider = strings.ToUpper(electricProvider)
-
 	lowestCost := currentCost
 
-	fmt.Println("Maine electricity cost comparison tool.")
-
-	// Grab all the rows
+	// Grab all the rows and build the list
 	rows := getHeadingRows(MAINE_SUPPLIER_URL)
-
 	supplierList := buildSupplierList(rows)
 
+	// Loop for every supplier and print all their offerings
 	for _, supplier := range supplierList {
 		fmt.Println("Supplier:", supplier.Company)
 		fmt.Println("Offerings:")
-			fmt.Println("CMP Rate\tEmera Rate\tTerm")
+			fmt.Println("\tCMP Rate\tEmera Rate\tTerm")
 		for _, offer := range supplier.Offers {
-			fmt.Printf("¢%.02f\t\t¢%.02f\t\t%s\r\n", offer.CMPRate, offer.EMERARate, offer.FixedTerm)
+			// This should be revisited at some point to make sure it doesn't break with weird values.
+			fmt.Printf("\t¢%.02f\t\t¢%.02f\t\t%s\r\n", offer.CMPRate, offer.EMERARate, offer.FixedTerm)
 
 			switch electricProvider {
 			case "CMP":
