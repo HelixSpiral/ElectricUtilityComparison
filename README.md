@@ -16,4 +16,4 @@ There are two ways to use this app.
 
 Don't want to do all this manually?
 ---
-[Arcadia Power](www.arcadia.com/referral/?promo=shawn9811) does this automatically at no charge to you, just sign up and link your electric utility account with them. You'll also get up to $25 off your first electric bill after enrolling by signing up with my [referral link](www.arcadia.com/referral/?promo=shawn9811)
+[Arcadia Power](https://www.arcadia.com/referral/?promo=shawn9811) does this automatically at no charge to you, just sign up and link your electric utility account with them. You'll also get up to $25 off your first electric bill after enrolling by signing up with my [referral link](https://www.arcadia.com/referral/?promo=shawn9811)
