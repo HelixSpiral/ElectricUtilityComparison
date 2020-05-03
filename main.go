@@ -14,10 +14,25 @@ import (
 
 const MAINE_SUPPLIER_URL = "https://www.maine.gov/meopa/electricity/electricity-supply"
 
+// Offer from the electric supplier
+type ElectricOffer struct {
+	CMPRate   float64
+	EMERARate float64
+	FixedTerm string
+}
+
+// Electric supplier
+type ElectricSupplier struct {
+	Company       string
+	Offers        []ElectricOffer
+	EarlyTermFee  string
+	ContactNumber string
+}
+
 func main() {
 	var currentCost float64
 	var electricProvider string
-	var providerRow int
+	var lowestProvider string
 
 	// Check to see if the user supplied args, or wants to take input.
 	if len(os.Args) > 1 {
@@ -35,58 +50,43 @@ func main() {
 		handleErr(err)
 	}
 
+	electricProvider = strings.ToUpper(electricProvider)
+
 	lowestCost := currentCost
 
 	fmt.Println("Maine electricity cost comparison tool.")
 
-	// Figure out what row the provider is in.
-	switch electricProvider {
-	case "CMP":
-		providerRow = 0
-	case "EMERA":
-		providerRow = 1
-	}
-
 	// Grab all the rows
 	rows := getHeadingRows(MAINE_SUPPLIER_URL)
 
-	// Loop for all the rows and hope they don't change the format often.
-	for _, row := range rows {
-		if len(row) == 6 {
-			fmt.Println("Provider:", row[0])
-			fmt.Println("- CMP Rate:", row[1])
-			fmt.Println("- Emera & BHE:", row[2])
-			fmt.Println("- Fixed Term:", row[3])
-			fmt.Println("- Early Termination Fee:", row[4])
-			fmt.Println("- Contact number:", row[5])
-			if strings.IndexAny(row[providerRow+1], " (%)") > -1 {
-				rowSplit := strings.Split(row[providerRow+1], " ")
-				row[providerRow+1] = rowSplit[0]
-			}
-			rateCheck, err := strconv.ParseFloat(row[providerRow+1], 64)
-			handleErr(err)
-			if lowestCost > rateCheck {
-				lowestCost = rateCheck
-			}
-		} else if len(row) == 3 {
-			fmt.Println("- CMP Rate:", row[0])
-			fmt.Println("- Emera & BHE:", row[1])
-			fmt.Println("- Fixed Term:", row[2])
-			fmt.Println("See above for early termination fee.")
-			if strings.IndexAny(row[providerRow], " (%)") > -1 {
-				rowSplit := strings.Split(row[providerRow], " ")
-				row[providerRow] = rowSplit[0]
-			}
-			rateCheck, err := strconv.ParseFloat(row[providerRow], 64)
-			handleErr(err)
-			if lowestCost > rateCheck {
-				lowestCost = rateCheck
+	supplierList := buildSupplierList(rows)
+
+	for _, supplier := range supplierList {
+		fmt.Println("Supplier:", supplier.Company)
+		fmt.Println("Offerings:")
+			fmt.Println("CMP Rate\tEmera Rate\tTerm")
+		for _, offer := range supplier.Offers {
+			fmt.Printf("¢%.02f\t\t¢%.02f\t\t%s\r\n", offer.CMPRate, offer.EMERARate, offer.FixedTerm)
+
+			switch electricProvider {
+			case "CMP":
+				if lowestCost > offer.CMPRate {
+					lowestCost = offer.CMPRate
+					lowestProvider = supplier.Company
+				}
+			case "EMERA":
+				if lowestCost > offer.EMERARate {
+					lowestCost = offer.EMERARate
+					lowestProvider = supplier.Company
+				}
 			}
 		}
+		fmt.Println("Early Termination Fee:", supplier.EarlyTermFee)
+		fmt.Println("Contact Number:", supplier.ContactNumber)
+		fmt.Println("-----")
 	}
-
 	fmt.Println("Current Cost:", currentCost)
-	fmt.Println("Lowest Cost Found:", lowestCost)
+	fmt.Printf("Lowest Cost Found: %.02f from %s\r\n", lowestCost, lowestProvider)
 	fmt.Println("If there's a provider offering cheaper electricity you can switch and save money.")
 	fmt.Println("There's no change in equipment, lines, or anything. Just a billing change with your provider.")
 	fmt.Println("For more details please visit: https://www.maine.gov/meopa/electricity/electricity-supply#CEPrates")
@@ -94,6 +94,61 @@ func main() {
 		fmt.Println("Press enter to exit.")
 		fmt.Scanf("%v\n", &electricProvider)
 	}
+}
+
+// Build out a slice of electric suppliers from the HTML table
+func buildSupplierList(rows [][]string) []ElectricSupplier {
+	var supplierList []ElectricSupplier
+	var supplier ElectricSupplier
+	var offering ElectricOffer
+	var lastSupplier = supplier
+
+	// Loop for all the rows and hope they don't change the format often.
+	for _, row := range rows {
+		if len(row) == 6 {
+			if lastSupplier.Company != "" {
+				supplierList = append(supplierList, lastSupplier)
+			}
+
+			var supplier ElectricSupplier
+
+			supplier.Company = row[0]
+			supplier.EarlyTermFee = row[4]
+			supplier.ContactNumber = row[5]
+
+			for x := 1; x <= 2; x++ {
+				if strings.IndexAny(row[1], " (%)") > -1 {
+					rowSplit := strings.Split(row[1], " ")
+					row[1] = rowSplit[0]
+				}
+			}
+
+			offering.CMPRate, _ = strconv.ParseFloat(row[1], 64)
+			offering.EMERARate, _ = strconv.ParseFloat(row[2], 64)
+			offering.FixedTerm = row[3]
+
+			supplier.Offers = append(supplier.Offers, offering)
+			lastSupplier = supplier
+		} else if len(row) == 3 {
+			var offering ElectricOffer
+
+			for x := 0; x <= 1; x++ {
+				if strings.IndexAny(row[x], " (%)") > -1 {
+					rowSplit := strings.Split(row[x], " ")
+					row[x] = rowSplit[0]
+				}
+			}
+
+			offering.CMPRate, _ = strconv.ParseFloat(row[0], 64)
+			offering.EMERARate, _ = strconv.ParseFloat(row[1], 64)
+			offering.FixedTerm = row[2]
+
+			lastSupplier.Offers = append(lastSupplier.Offers, offering)
+
+		}
+	}
+
+	return supplierList
 }
 
 // Get the headings and rows from the website
