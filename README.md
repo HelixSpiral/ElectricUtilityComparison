@@ -12,7 +12,7 @@ There are two ways to use this app.
 
 1. Double click the app. You'll be prompted to input your current cost and power company.
 
-2. Run the app in the terminal using `./powercost -current=10.5 -provider=CMP` where 10.5 and CMP can be changed to your current info
+2. Run the app in the terminal using `./electricutility -current=currentkWhCost -provider=providerName`. Eg: `./electricutility -current=7.56 -provider=CMP`
 
 Don't want to do all this manually?
 ---
